@@ -4,16 +4,29 @@ use std::env;
 use std::{fs, fs::File};
 use std::io::prelude::*;
 
-use crate::parsing::file_is_event;
+
+use regex::Regex;
+
+use crate::parsing::{file_is_event, line_is_event};
 
 mod parsing {
   use std::fs::File;
+  use regex::Regex;
 
-  pub fn file_is_event(filestr: &String) -> bool {
+  pub fn file_is_event(filestr: &str) -> bool {
     /* Need to, later, figure out how to only check the first like, 10 lines so I don't process entire,
     large files, since it'll always be at the beginning */
     let event_bool: bool = filestr.lines().any(|line| line.matches("Tags: #event").collect::<Vec<&str>>().len() > 0);
     event_bool
+  }
+
+  pub fn line_is_event(linestr: &&str) -> bool {
+    /* For now, only really checking the beginning of the line for `- [ ] (.*) (.*) (.*)` */
+    let reg: Regex = Regex::new(r#"- \[[ ,x]\] +\(.*\) +\(.*\) +\(.*\)"#).expect("Bruh");
+    // let reg: Regex = Regex::new(r"- \[[ ,x]\] \(.*\)").unwrap();
+    // println!("{}", linestr.trim());
+    // dbg!(&reg);
+    reg.captures(linestr.trim()).is_some()
   }
 }
 
@@ -31,7 +44,9 @@ fn main() {
     .expect("Should have been able to find file");
 
   let event_bool: bool = file_is_event(&s);
-  println!("{event_bool}")
+  println!("{event_bool}");
 
+  let thin: Vec<String> = s.lines().filter(line_is_event).map(|s| s.to_string()).collect();
+  println!("{:#?}", thin);
 
   }

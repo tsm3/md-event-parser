@@ -4,7 +4,7 @@ Tags: #event
 
 
 # Concert List
-Here I'm going to keep a continuously updating checklist of concerts I want to go to and scratch them out once they've passed.
+Here() I'm going to keep a continuously updating checklist of concerts I want to go to and scratch them out once they've passed.
 Try to keep the top entry the most recent
 
 - [ ] (24-25 Feb) () () Excision
