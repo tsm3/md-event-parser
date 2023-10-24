@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, NaiveTime};
 use std::{error::Error, fmt};
 
 #[derive(Debug, Clone, Default)]
@@ -20,7 +20,7 @@ type Result<T> = std::result::Result<T, EventParseError>;
 #[derive(Default, Debug)]
 pub struct EventModel {
   date: NaiveDate, // Make this just a datetime, mandatory
-  time: Option<String>, // If None, all day
+  time: Option<NaiveTime>, // If None, all day
   place: Option<String>, // Should this be mandatory?
   title: String, // This is mandatory, but just a String
 }
@@ -36,6 +36,8 @@ impl EventModel {
       Ok(d) => d,
       Err(_) => return Err(EventParseError::default()),
     };
+
+    // let t_struct = match 
       
     Ok(EventModel { date: date_struct, title, ..Default::default()})
   }
@@ -44,9 +46,7 @@ impl EventModel {
 
 #[cfg(test)]
 mod tests {
-  use crate::model::EventModel;
-  use chrono::{Datelike, NaiveDate};
-
+  use crate::model::*;
 
   #[test]
   fn default_cons() {
@@ -69,10 +69,16 @@ mod tests {
     }
     
     #[test]
-    fn test_parse() {
+    fn test_parse_date() {
       let bruh = NaiveDate::parse_from_str("15-Feb-2023", "%d-%b-%Y");
       // dbg!(bruh);
       assert!(bruh.is_ok());
+    }
+
+    #[test]
+    fn test_parse_time() {
+      let bruh = NaiveTime::parse_from_str("6:00 PM", "%I:%M %P");
+      dbg!(bruh);
     }
 
 }
