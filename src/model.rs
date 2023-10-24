@@ -19,8 +19,10 @@ type Result<T> = std::result::Result<T, EventParseError>;
 
 #[derive(Default, Debug)]
 pub struct EventModel {
-  date: NaiveDate, // Make this just a datetime, mandatory
-  time: Option<NaiveTime>, // If None, all day
+  start_date: NaiveDate, // Make this just a datetime, mandatory
+  end_date: Option<NaiveDate>, // Make this just a datetime, mandatory
+  start_time: Option<NaiveTime>, // If None, all day
+  end_time: Option<NaiveTime>, // If None, all day
   place: String, // Should this be mandatory? yuh just empty string if None
   title: String, // This is mandatory, but just a String
 }
@@ -29,12 +31,14 @@ impl EventModel {
   const DATEFMT: &str = "%d %b %Y";
 
   pub fn new(
-    date: String,
-    time: Option<String>,
+    start_date: String,
+    end_date: Option<String>,
+    start_time: Option<String>,
+    end_time: Option<String>,
     place: Option<String>,
     title: String
   ) -> Result<EventModel> {
-    let date_struct = match NaiveDate::parse_from_str(&date, EventModel::DATEFMT) {
+    let date_struct = match NaiveDate::parse_from_str(&start_date, EventModel::DATEFMT) {
       Ok(d) => d,
       Err(_) => return Err(EventParseError::default()),
     };
@@ -46,7 +50,7 @@ impl EventModel {
       None => "".to_owned(),
     };
       
-    Ok(EventModel { date: date_struct, title: title, place: p, ..Default::default()})
+    Ok(EventModel { start_date: date_struct, title: title, place: p, ..Default::default()})
   }
 
   pub fn with_date(date_str: String) -> Result<EventModel> {
@@ -55,7 +59,7 @@ impl EventModel {
       Err(_) => return Err(EventParseError::default()),
     };
     Ok(EventModel{
-      date:date_struct,
+      start_date:date_struct,
       ..Default::default()
     })
 
@@ -72,7 +76,7 @@ mod tests {
 
   #[test]
   fn default_cons() {
-    unimplemented!("Need to update this to NaiveDate");
+    // unimplemented!("Need to update this to NaiveDate");
     let em = EventModel{
       // date: Some("Hi".to_string()),
       ..Default::default()
@@ -84,8 +88,10 @@ mod tests {
     fn test_new() {
       let em = EventModel::new(
         "15 Feb 2023".to_string(),
+        None,
         None, 
         None, 
+        None,
         "Test Title".to_string());
       dbg!(em);
     }
