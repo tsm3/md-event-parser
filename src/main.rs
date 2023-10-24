@@ -7,7 +7,10 @@ use std::io::prelude::*;
 
 use regex::Regex;
 
+mod model;
+use model::EventModel;
 use crate::parsing::{file_is_event, line_is_event};
+// use crate::lib::prelude::*;
 
 mod parsing {
   use std::fs::File;
