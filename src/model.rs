@@ -3,8 +3,11 @@
 use chrono::{Datelike, NaiveDate};
 use std::{error::Error, fmt};
 
-#[derive(Debug, Clone)]
-pub struct EventParseError;
+#[derive(Debug, Clone, Default)]
+pub struct EventParseError {
+  desc: String
+}
+
 impl fmt::Display for EventParseError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       write!(f, "Oh no can't parse that.")
@@ -24,17 +27,16 @@ pub struct EventModel {
 
 impl EventModel {
   pub fn new(
-    date: Option<String>,
+    date: String,
     time: Option<String>,
     place: Option<String>,
     title: String
   ) -> Result<EventModel> {
-    let date_struct = match date {
-      Some(datestr) => {
-        NaiveDate::parse_from_str(&datestr, "%d %b %Y").unwrap()
-      }
-      None => return Err(EventParseError),
+    let date_struct = match NaiveDate::parse_from_str(&date, "%d %b %Y") {
+      Ok(d) => d,
+      Err(_) => return Err(EventParseError::default()),
     };
+      
     Ok(EventModel { date: date_struct, title, ..Default::default()})
   }
 }
@@ -59,14 +61,16 @@ mod tests {
     #[test]
     fn test_new() {
       let em = EventModel::new(
-        Some("15 Feb 2023".to_string()), None, None, "Test Title".to_string());
+        "15 Feb 2023".to_string(),
+        None, 
+        None, 
+        "Test Title".to_string());
       dbg!(em);
     }
     
     #[test]
     fn test_parse() {
       let bruh = NaiveDate::parse_from_str("15-Feb-2023", "%d-%b-%Y");
-      // let bruh = NaiveDate::parse_from_str("2015-09-05", "%Y-%m-%d");
       // dbg!(bruh);
       assert!(bruh.is_ok());
     }
