@@ -44,13 +44,6 @@ use super::EventModel;
       serializer.serialize_str(&s)
   }
 
-  // The signature of a serialize_with function must follow the pattern:
-  //
-  //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
-  //    where
-  //        S: Serializer
-  //
-  // although it may also be generic over the input types T.
   pub fn serialize_naive_date_opt<S>(
     date: &Option<NaiveDate>,
     serializer: S,
