@@ -128,17 +128,17 @@ impl EventModel {
     })
   }
 
-  fn base_parse_time(timestr: &impl Into<String>) -> ParseResult<NaiveTime> {
+  fn base_parse_time(timestr: impl Into<String> + Copy) -> ParseResult<NaiveTime> {
     /* Put in one place for ease of iteration */
     NaiveTime::parse_from_str(&timestr.into(), EventModel::TIMEFMT)
   }
 
-  fn base_parse_date(datestr: impl Into<String>) -> ParseResult<NaiveDate> {
+  fn base_parse_date(datestr: impl Into<String> + Copy) -> ParseResult<NaiveDate> {
     /* Put in one place for ease of iteration */
     NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
   }
 
-  fn parse_time_tup(timestr: impl Into<String>) -> (Result<NaiveTime>, Option<NaiveTime>) {
+  fn parse_time_tup(timestr: impl Into<String> + Copy) -> (Result<NaiveTime>, Option<NaiveTime>) {
     /* Need to localize the complicated way I'm going to parse time */
     /** List of ways I might write time?
      * form a) 6 PM
@@ -150,7 +150,7 @@ impl EventModel {
     
     // unimplemented!("Just not here yet");
 
-    let start_time_struct = Self::base_parse_time(&timestr).map_err(|e| EventParseError{desc: e.to_string()});
+    let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
 
     if start_time_struct.is_ok() { // If is_ok, then it was just a start time
       return (start_time_struct, None);
