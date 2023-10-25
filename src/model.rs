@@ -129,17 +129,17 @@ impl EventModel {
     })
   }
 
-  fn base_parse_time(timestr: impl Into<String> + Copy) -> ParseResult<NaiveTime> {
+  fn base_parse_time(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveTime> {
     /* Put in one place for ease of iteration */
     NaiveTime::parse_from_str(&timestr.into(), EventModel::TIMEFMT)
   }
 
-  fn base_parse_date(datestr: impl Into<String> + Copy) -> ParseResult<NaiveDate> {
+  fn base_parse_date(datestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveDate> {
     /* Put in one place for ease of iteration */
     NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
   }
 
-  fn parse_time_tup(timestr: impl Into<String> + Copy) -> (Result<NaiveTime>, Option<NaiveTime>) {
+  fn parse_time_tup(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> (Result<NaiveTime>, Option<NaiveTime>) {
     /* Need to localize the complicated way I'm going to parse time */
     /** List of ways I might write time?
      * form a) 6 PM
@@ -151,16 +151,35 @@ impl EventModel {
     
     // unimplemented!("Just not here yet");
     let time_reg_arr: [Regex; 3] = [
-      Regex::new(r"\d{1,2}:\d\d [A,P]M").unwrap(),
-      Regex::new(r"\d{1,2} [A,P]M").unwrap(),
-      Regex::new(r"\d{1,2}(:\d\d)?-\d{1,2}(:\d\d)? [A,P]M").unwrap(),
-    ];
+        Regex::new(r"^\d{1,2}:\d\d [A,P]M").unwrap(),
+        Regex::new(r"^(\d{1,2}) ([A,P]M)").unwrap(),
+        Regex::new(r"^\d{1,2}(:\d\d)?-\d{1,2}(:\d\d)? [A,P]M").unwrap(),
+      ];
 
-    let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
-
-    if start_time_struct.is_ok() { // If is_ok, then it was just a start time
+    if time_reg_arr[0].is_match(timestr.as_ref()) {
+      println!("String {timestr} matches regex {:?}", time_reg_arr[0]);
+      // Simple/well-formed case
+      let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
       return (start_time_struct, None);
+    } else if let Some(mat) = time_reg_arr[1].captures(timestr.as_ref()) {
+      println!("String {timestr} matches regex {:?}", time_reg_arr[1]);
+      // This is single time with no `:\d\d`
+      let mut modstr: String = String::new();
+      // Pushes the number we matched on to the str
+      modstr.push_str(mat.extract::<2>().1[0]);
+      modstr.push_str(":00 ");
+      // Pushes the AM or PM
+      modstr.push_str(mat.extract::<2>().1[1]);
+      let start_time_struct = Self::base_parse_time(&modstr).map_err(|e| EventParseError{desc:e.to_string()});
+      return (start_time_struct, None);
+    } else if let Some(mat) = time_reg_arr[2].captures(timestr.as_ref()) {
+      println!("String {timestr} matches regex {:?}", time_reg_arr[2]);
+      unimplemented!();
+    } else {
+      return (Err(EventParseError { desc: "".to_owned() }), None);
     }
+
+    unreachable!();
 
     /**
      * If here, know is_err(), which means we can't just parse it as is, so try looking for a `-`, meaning there's a start and stop time
@@ -171,11 +190,7 @@ impl EventModel {
     let timestr: String = timestr.into();
     let constructed_str = String::new();
 
-
     
-
-
-    (start_time_struct, None)
   }
 
 }
@@ -263,9 +278,23 @@ mod tests {
 
     #[test]
     fn test_parse_time_tup() {
+      let time1: &'static str = "6:00 AM";
+      let time2: &'static str = "6 PM";
+      let time3: &'static str = "6:00-7:00 AM";
+      let time4: &'static str = "6-7 AM";
+      
       let start_timestr: &'static str = "6:00 PM";
-      let b = EventModel::parse_time_tup(start_timestr);
+      let a = EventModel::parse_time_tup(start_timestr);
+      dbg!(a);
+
+      let b = EventModel::parse_time_tup(time2);
       dbg!(b);
+      
+      let c = EventModel::parse_time_tup(time3);
+      dbg!(c);
+
+      let d = EventModel::parse_time_tup(time4);
+      dbg!(d);
     }
 
     #[test]
@@ -310,5 +339,6 @@ mod tests {
       assert!(time4_results.iter().any(|o| o.is_some()));
 
     }
+
 
 }
