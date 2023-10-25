@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use chrono::{Datelike, NaiveDate, NaiveTime};
+use chrono::{Datelike, NaiveDate, NaiveTime, ParseResult};
 use std::{error::Error, fmt};
 use serde::{Serialize, Deserialize};
 
@@ -92,6 +92,7 @@ pub struct EventModel {
 impl EventModel {
   const DATEFMT: &'static str = "%d %b %Y";
   const TIMEFMT: &'static str = "%I:%M %P";
+  const TIMEFMT2: &'static str = "%I%M %P";
 
   pub fn new(
     start_date: String,
@@ -125,7 +126,33 @@ impl EventModel {
       start_date:date_struct,
       ..Default::default()
     })
+  }
 
+  fn base_parse_time(timestr: impl Into<String>) -> ParseResult<NaiveTime> {
+    /* Put in one place for ease of iteration */
+    NaiveTime::parse_from_str(&timestr.into(), EventModel::TIMEFMT)
+  }
+
+  fn base_parse_date(datestr: impl Into<String>) -> ParseResult<NaiveDate> {
+    /* Put in one place for ease of iteration */
+    NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
+  }
+
+  fn parse_time_tup(timestr: impl Into<String>) -> (Result<NaiveTime>, Result<NaiveTime>) {
+    /* Need to localize the complicated way I'm going to parse time */
+    /** List of ways I might write time?
+     * 6 PM
+     * 6:00 PM
+     * 6-7 PM
+     * 6:30-7PM
+     * I'm going to have to figure out how to extract both start and end time from this?
+     */
+    
+    unimplemented!("Just not here yet");
+
+    // if let Ok(time_struct) = 
+
+    // (Err(EventParseError{..Default::default()}), Err(EventParseError{..Default::default()}))
   }
 
 }
@@ -168,14 +195,14 @@ mod tests {
     
     #[test]
     fn test_parse_date() {
-      let bruh = NaiveDate::parse_from_str("15-Feb-2023", "%d-%b-%Y");
+      let bruh = EventModel::base_parse_date("3 Nov 2023");
       // dbg!(bruh);
       assert!(bruh.is_ok());
     }
 
     #[test]
     fn test_parse_time() {
-      let bruh = NaiveTime::parse_from_str("6:00 PM", EventModel::TIMEFMT);
+      let bruh = EventModel::base_parse_time("6:00 PM");
       dbg!(bruh);
     }
 
@@ -200,7 +227,15 @@ mod tests {
 
       let json = serde_json::to_string_pretty(&em).unwrap();
       println!("{}", json);
+    }
 
+    #[test]
+    fn test_timefmt2() {
+      let timestr: &'static str = "0600 PM"; // This does work
+      // let timestr: &'static str = "600 PM"; // This doesn't work
+      let date = NaiveTime::parse_from_str(timestr, EventModel::TIMEFMT2);
+      assert!(date.is_ok());
+      dbg!(date);
     }
 
 }
