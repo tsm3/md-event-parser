@@ -153,7 +153,7 @@ impl EventModel {
     let time_reg_arr: [Regex; 3] = [
         Regex::new(r"^\d{1,2}:\d\d [A,P]M").unwrap(),
         Regex::new(r"^(\d{1,2}) ([A,P]M)").unwrap(),
-        Regex::new(r"^\d{1,2}(:\d\d)?-\d{1,2}(:\d\d)? [A,P]M").unwrap(),
+        Regex::new(r"^(\d{1,2})((?::\d\d)|)((?:[A,P]M|))-(\d{1,2})((?::\d\d)|) ?([A,P]M)").unwrap(),
       ];
 
     if time_reg_arr[0].is_match(timestr.as_ref()) {
@@ -161,6 +161,7 @@ impl EventModel {
       // Simple/well-formed case
       let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
       return (start_time_struct, None);
+
     } else if let Some(mat) = time_reg_arr[1].captures(timestr.as_ref()) {
       println!("String {timestr} matches regex {:?}", time_reg_arr[1]);
       // This is single time with no `:\d\d`
@@ -172,9 +173,61 @@ impl EventModel {
       modstr.push_str(mat.extract::<2>().1[1]);
       let start_time_struct = Self::base_parse_time(&modstr).map_err(|e| EventParseError{desc:e.to_string()});
       return (start_time_struct, None);
+
     } else if let Some(mat) = time_reg_arr[2].captures(timestr.as_ref()) {
       println!("String {timestr} matches regex {:?}", time_reg_arr[2]);
-      unimplemented!();
+      /**
+       * This is the most complicated case, we have up to 5 capture groups.
+       * I'm considering breaking this into two different cases like
+       * 6-7 PM vs 6:30-7:30 PM
+       * But what if I have a like 6-7:30 PM or 6:15-7 PM case?
+       * Then it's weird bc do those belong to the no :00 case or the yes :00 case?
+       */
+
+      /**
+       * Check for capture group 2 (idx 1) and 4 (idx 3), as these are the :\d\d groups
+       * If they don't exist, push :00 to the string in their place
+       * Then add cap group 5 (idx 4) to each string, then parse base time each
+       * so I'll return (Some(NaiveTime(($1)($2 OR :00)($5))) , Some(NaiveTime(($3)($4 OR :00)($5))) )
+       */
+
+      let mut startstr: String = String::new();
+      let mut endstr: String = String::new();
+      let cap1 = mat.extract::<6>().1[0]; // Start Hour
+      let cap2 = mat.extract::<6>().1[1]; // Start minute (or "")
+      let cap3 = mat.extract::<6>().1[2]; // AM or PM for start
+      let cap4 = mat.extract::<6>().1[3]; // End Hour
+      let cap5 = mat.extract::<6>().1[4]; // End minute (or "")
+      let cap6 = mat.extract::<6>().1[5]; // AM or PM for end
+
+      startstr.push_str(cap1);
+      if !cap2.is_empty() {
+        startstr.push_str(cap2);
+        startstr.push_str(" ");
+      } else {
+        startstr.push_str(":00 ");
+      }
+
+      if !cap3.is_empty() {
+        startstr.push_str(cap3);
+      } else {
+        startstr.push_str(cap6)
+      }
+
+      endstr.push_str(cap4);
+      if !cap5.is_empty() {
+        endstr.push_str(cap5);
+        endstr.push_str(" ");
+      } else {
+        endstr.push_str(":00 ");
+      }
+      endstr.push_str(cap6);
+      
+      let start_time_struct = Self::base_parse_time(&startstr).map_err(|e| EventParseError{desc:e.to_string()});
+      let end_time_struct = Self::base_parse_time(&endstr).ok();
+
+      return (start_time_struct, end_time_struct);
+
     } else {
       return (Err(EventParseError { desc: "".to_owned() }), None);
     }
