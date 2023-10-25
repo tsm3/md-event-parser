@@ -128,7 +128,7 @@ impl EventModel {
     })
   }
 
-  fn base_parse_time(timestr: impl Into<String>) -> ParseResult<NaiveTime> {
+  fn base_parse_time(timestr: &impl Into<String>) -> ParseResult<NaiveTime> {
     /* Put in one place for ease of iteration */
     NaiveTime::parse_from_str(&timestr.into(), EventModel::TIMEFMT)
   }
@@ -138,21 +138,36 @@ impl EventModel {
     NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
   }
 
-  fn parse_time_tup(timestr: impl Into<String>) -> (Result<NaiveTime>, Result<NaiveTime>) {
+  fn parse_time_tup(timestr: impl Into<String>) -> (Result<NaiveTime>, Option<NaiveTime>) {
     /* Need to localize the complicated way I'm going to parse time */
     /** List of ways I might write time?
-     * 6 PM
+     * form a) 6 PM
      * 6:00 PM
      * 6-7 PM
      * 6:30-7PM
      * I'm going to have to figure out how to extract both start and end time from this?
      */
     
-    unimplemented!("Just not here yet");
+    // unimplemented!("Just not here yet");
 
-    // if let Ok(time_struct) = 
+    let start_time_struct = Self::base_parse_time(&timestr).map_err(|e| EventParseError{desc: e.to_string()});
 
-    // (Err(EventParseError{..Default::default()}), Err(EventParseError{..Default::default()}))
+    if start_time_struct.is_ok() { // If is_ok, then it was just a start time
+      return (start_time_struct, None);
+    }
+
+    /**
+     * If here, know is_err(), which means we can't just parse it as is, so try looking for a `-`, meaning there's a start and stop time
+     * if no `-`, then check for a :, if there isn't one, then try parsing as if it's form a) 
+     * so like, make a String, capture the number, append `:00` to it, put the appropriate AM/PM, try parsing again
+     */
+
+    let timestr: String = timestr.into();
+    let constructed_str = String::new();
+    
+
+
+    (start_time_struct, None)
   }
 
 }
@@ -236,6 +251,13 @@ mod tests {
       let date = NaiveTime::parse_from_str(timestr, EventModel::TIMEFMT2);
       assert!(date.is_ok());
       dbg!(date);
+    }
+
+    #[test]
+    fn test_parse_time_tup() {
+      let start_timestr: &'static str = "6:00 PM";
+      let b = EventModel::parse_time_tup(start_timestr);
+      dbg!(b);
     }
 
 }
