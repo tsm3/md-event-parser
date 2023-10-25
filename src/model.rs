@@ -2,6 +2,7 @@
 
 use chrono::{Datelike, NaiveDate, NaiveTime};
 use std::{error::Error, fmt};
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Default)]
 pub struct EventParseError {
@@ -16,19 +17,88 @@ impl fmt::Display for EventParseError {
 
 type Result<T> = std::result::Result<T, EventParseError>;
 
+mod my_date_ser {
+  use chrono::{DateTime, NaiveDate, NaiveTime};
+  use serde::{self, Deserialize, Serializer, Deserializer};
 
-#[derive(Default, Debug)]
+use super::EventModel;
+
+  const DATEFORMAT: &'static str = EventModel::DATEFMT;
+  const TIMEFORMAT: &'static str = EventModel::TIMEFMT;
+
+  // The signature of a serialize_with function must follow the pattern:
+  //
+  //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
+  //    where
+  //        S: Serializer
+  //
+  // although it may also be generic over the input types T.
+  pub fn serialize_naive_date<S>(
+      date: &NaiveDate,
+      serializer: S,
+  ) -> Result<S::Ok, S::Error>
+  where
+      S: Serializer,
+  {
+      let s = format!("{}", date.format(DATEFORMAT));
+      serializer.serialize_str(&s)
+  }
+
+  // The signature of a serialize_with function must follow the pattern:
+  //
+  //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
+  //    where
+  //        S: Serializer
+  //
+  // although it may also be generic over the input types T.
+  pub fn serialize_naive_date_opt<S>(
+    date: &Option<NaiveDate>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let s = match date {
+      Some(date) => format!("{}", date.format(DATEFORMAT)),
+      _ => unreachable!(),
+    };
+    serializer.serialize_str(&s)
+}
+
+pub fn serialize_naive_time_opt<S>(
+  time: &Option<NaiveTime>,
+  serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
+  let s = match time {
+    Some(time) => format!("{}", time.format(TIMEFORMAT)),
+    _ => unreachable!(),
+  };
+  serializer.serialize_str(&s)
+}
+
+
+}
+
+#[derive(Default, Debug, Serialize)]
 pub struct EventModel {
+  #[serde(serialize_with = "my_date_ser::serialize_naive_date")]
   start_date: NaiveDate, // Make this just a datetime, mandatory
+  #[serde(serialize_with = "my_date_ser::serialize_naive_date_opt", skip_serializing_if = "Option::is_none")]
   end_date: Option<NaiveDate>, // Make this just a datetime, mandatory
+  #[serde(serialize_with = "my_date_ser::serialize_naive_time_opt", skip_serializing_if = "Option::is_none")]
   start_time: Option<NaiveTime>, // If None, all day
+  #[serde(serialize_with = "my_date_ser::serialize_naive_time_opt", skip_serializing_if = "Option::is_none")]
   end_time: Option<NaiveTime>, // If None, all day
   place: String, // Should this be mandatory? yuh just empty string if None
   title: String, // This is mandatory, but just a String
 }
 
 impl EventModel {
-  const DATEFMT: &str = "%d %b %Y";
+  const DATEFMT: &'static str = "%d %b %Y";
+  const TIMEFMT: &'static str = "%I:%M %P";
 
   pub fn new(
     start_date: String,
@@ -112,8 +182,32 @@ mod tests {
 
     #[test]
     fn test_parse_time() {
-      let bruh = NaiveTime::parse_from_str("6:00 PM", "%I:%M %P");
+      let bruh = NaiveTime::parse_from_str("6:00 PM", EventModel::TIMEFMT);
       dbg!(bruh);
+    }
+
+    #[test]
+    fn test_ser_naive_date() {
+      let datestr: &'static str = "3 Nov 2023";
+      let timestr: &'static str = "6:00 PM";
+      
+      let date = NaiveDate::parse_from_str(datestr, EventModel::DATEFMT);
+      assert!(date.is_ok());
+      let date = date.unwrap();
+
+      let time = NaiveTime::parse_from_str(timestr, EventModel::TIMEFMT);
+      assert!(time.is_ok());
+      let time = time.unwrap();
+
+      let em = EventModel{
+        start_date: date,
+        start_time: Some(time),
+        ..Default::default()
+    };
+
+      let json = serde_json::to_string_pretty(&em).unwrap();
+      println!("{}", json);
+
     }
 
 }
