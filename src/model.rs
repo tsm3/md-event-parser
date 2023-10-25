@@ -253,6 +253,7 @@ impl EventModel {
 
 #[cfg(test)]
 mod tests {
+
   use crate::model::*;
 
   #[test]
@@ -331,23 +332,25 @@ mod tests {
 
     #[test]
     fn test_parse_time_tup() {
-      let time1: &'static str = "6:00 AM";
-      let time2: &'static str = "6 PM";
-      let time3: &'static str = "6:00-7:00 AM";
-      let time4: &'static str = "6-7 AM";
+      let time_str_vec = vec![
+        "6:00 AM",
+        "6 PM",
+        "6:00-7:00 AM",
+        "6:00AM-7:00 AM",
+        "6:00AM-7:00PM",
+        "6-7:00 PM",
+        "6:30-7:00 AM",
+        "6-7 AM",
+        "6PM-7 AM",
+      ];
       
-      let start_timestr: &'static str = "6:00 PM";
-      let a = EventModel::parse_time_tup(start_timestr);
-      dbg!(a);
-
-      let b = EventModel::parse_time_tup(time2);
-      dbg!(b);
-      
-      let c = EventModel::parse_time_tup(time3);
-      dbg!(c);
-
-      let d = EventModel::parse_time_tup(time4);
-      dbg!(d);
+      let mut time_struct_vec = vec![];
+      for time_str in time_str_vec {
+        let temp = EventModel::parse_time_tup(time_str);
+        dbg!(&temp);
+        assert!(temp.0.is_ok());
+        time_struct_vec.push(temp);
+      }
     }
 
     #[test]
