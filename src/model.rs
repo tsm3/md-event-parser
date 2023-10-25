@@ -3,6 +3,7 @@
 use chrono::{Datelike, NaiveDate, NaiveTime, ParseResult};
 use std::{error::Error, fmt};
 use serde::{Serialize, Deserialize};
+use regex::Regex;
 
 #[derive(Debug, Clone, Default)]
 pub struct EventParseError {
@@ -149,6 +150,11 @@ impl EventModel {
      */
     
     // unimplemented!("Just not here yet");
+    let time_reg_arr: [Regex; 3] = [
+      Regex::new(r"\d{1,2}:\d\d [A,P]M").unwrap(),
+      Regex::new(r"\d{1,2} [A,P]M").unwrap(),
+      Regex::new(r"\d{1,2}(:\d\d)?-\d{1,2}(:\d\d)? [A,P]M").unwrap(),
+    ];
 
     let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
 
@@ -164,6 +170,8 @@ impl EventModel {
 
     let timestr: String = timestr.into();
     let constructed_str = String::new();
+
+
     
 
 
@@ -258,6 +266,49 @@ mod tests {
       let start_timestr: &'static str = "6:00 PM";
       let b = EventModel::parse_time_tup(start_timestr);
       dbg!(b);
+    }
+
+    #[test]
+    fn test_time_regex_arr() {
+      /* I'm manually copy + pasting the regex arr bc I don't know how to make regex a const in EventModel */
+      let time_reg_arr: [Regex; 3] = [
+        Regex::new(r"^\d{1,2}:\d\d [A,P]M").unwrap(),
+        Regex::new(r"^\d{1,2} [A,P]M").unwrap(),
+        Regex::new(r"^\d{1,2}(:\d\d)?-\d{1,2}(:\d\d)? [A,P]M").unwrap(),
+      ];
+      let time1: String = "6:00 AM".to_owned();
+      let time2: String = "6 PM".to_owned();
+      let time3: String = "6:00-7:00 AM".to_owned();
+      let time4: String = "6-7 AM".to_owned();
+
+      let mut time1_results = Vec::new();
+      for reg in &time_reg_arr {
+        time1_results.push(reg.captures(&time1));
+      }
+      // dbg!(&time1_results);
+      assert!(time1_results.iter().any(|o| o.is_some()));
+
+      let mut time2_results = Vec::new();
+      for reg in &time_reg_arr {
+        time2_results.push(reg.captures(&time2));
+      }
+      // dbg!(&time2_results);
+      assert!(time2_results.iter().any(|o| o.is_some()));
+
+      let mut time3_results = Vec::new();
+      for reg in &time_reg_arr {
+        time3_results.push(reg.captures(&time3));
+      }
+      // dbg!(&time3_results);
+      assert!(time3_results.iter().any(|o| o.is_some()));
+
+      let mut time4_results = Vec::new();
+      for reg in &time_reg_arr {
+        time4_results.push(reg.captures(&time4));
+      }
+      // dbg!(&time4_results);
+      assert!(time4_results.iter().any(|o| o.is_some()));
+
     }
 
 }
