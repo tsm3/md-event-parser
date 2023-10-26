@@ -144,13 +144,30 @@ impl EventModel {
 
     let (datestr, timestr, placestr, titlestr) = EventModel::extract_from_line(&linestr)?;
 
-    let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr)?;
-    // let start_time_struct = start_time_struct;
-
     let mut ret = EventModel::default();
 
+    let (start_date_struct, end_date_struct) = EventModel::parse_date_tup(datestr)?;
+
+    if let Some(start_date_struct) = start_date_struct {
+      ret.start_date = start_date_struct;
+    } else {
+      return Err(EventParseError { desc: "Couldn't parse start_date, which is a necessary field".to_string() });
+    }
+    ret.end_date = match end_date_struct {
+      Some(end) => Some(end),
+      None => Some(start_date_struct.expect("To get here, we've already verified it's an Ok()")),
+    };
+
+    let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr)?;
     ret.start_time = start_time_struct;
     ret.end_time   = end_time_struct;
+
+    ret.place = placestr.to_string();
+    if !titlestr.is_empty() {
+      ret.title = titlestr.to_string();
+    } else {
+      return Err(EventParseError { desc: "No empty titles allowed loser".to_string() });
+    }
 
     Ok(ret)
   }
