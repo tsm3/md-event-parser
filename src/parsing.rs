@@ -5,7 +5,7 @@ use regex::Regex;
 use std::env;
 use std::io::prelude::*;
 
-const EVENTREGEX : &'static str = r"- \[[ ,x]\] +(\(.*\)) +(\(.*\)) +(\(.*\))";
+pub const EVENTREGEX : &'static str = r"- \[[ ,x]\] +\((.*)\) +\((.*)\) +\((.*)\)(.*)";
 
 pub fn file_is_event(filestr: &str) -> bool {
   /* Need to, later, figure out how to only check the first like, 10 lines so I don't process entire,
@@ -14,7 +14,7 @@ pub fn file_is_event(filestr: &str) -> bool {
   event_bool
 }
 
-pub fn line_is_event(linestr: &&str) -> bool {
+pub fn line_is_event(linestr: &str) -> bool {
   /* For now, only really checking the beginning of the line for `- [ ] (.*) (.*) (.*)` */
   let reg: Regex = Regex::new(EVENTREGEX).expect("Bruh");
   reg.captures(linestr.trim()).is_some()
@@ -40,7 +40,7 @@ mod tests {
     let event_bool: bool = file_is_event(&s);
     println!("{event_bool}");
 
-    let thin: Vec<String> = s.lines().filter(line_is_event).map(|s| s.to_string()).collect();
+    let thin: Vec<String> = s.lines().filter(|&l| line_is_event(l)).map(|s| s.to_string()).collect();
     println!("{:#?}", thin);
   }
 }

@@ -1,9 +1,11 @@
 #![allow(unused)]
 
 use chrono::{Datelike, NaiveDate, NaiveTime, ParseResult};
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, io::BufRead};
 use serde::{Serialize, Deserialize};
 use regex::Regex;
+
+use crate::parsing;
 
 #[derive(Debug, Clone, Default)]
 pub struct EventParseError {
@@ -95,6 +97,10 @@ impl EventModel {
   const TIMEFMT: &'static str = "%I:%M %P";
   const TIMEFMT2: &'static str = "%I%M %P";
 
+  const REG1: &'static str = r"^\d{1,2}:\d\d [A,P]M";
+  const REG2: &'static str = r"^(\d{1,2}) ([A,P]M)";
+  const REG3: &'static str = r"^(\d{1,2})((?::\d\d)|)((?:[A,P]M|))-(\d{1,2})((?::\d\d)|) ?([A,P]M)";
+
   pub fn new(
     start_date: String,
     end_date: Option<String>,
@@ -116,6 +122,37 @@ impl EventModel {
     };
       
     Ok(EventModel { start_date: date_struct, title: title, place: p, ..Default::default()})
+  }
+
+  pub fn from_line(
+    linestr: String
+  ) -> Result<EventModel> {
+
+    if !parsing::line_is_event(&linestr) {
+      return Err(EventParseError { desc: "This line is not an event: {linestr}".to_owned() })
+    }
+
+    let ret = EventModel::default();
+
+    
+
+    Ok(EventModel::default())
+  }
+
+  pub fn extract_from_line(haystack: &str) -> Result<(String, String, String, String)> {
+
+    // // Remove checklist prefix
+    // let trim_line = linestr
+    //   .trim_start()
+    //   .trim_start_matches("- [ ] ")
+    //   .trim_start_matches("- [x] ");
+
+    let reg = Regex::new(parsing::EVENTREGEX).unwrap();
+
+    let temp = reg.captures(haystack).ok_or(EventParseError{desc: "Line regex didn't match".to_owned()})?;
+    
+
+    return Ok(("".to_owned(), "".to_owned(), "".to_owned(), "".to_owned()));
   }
 
   pub fn with_date(date_str: String) -> Result<EventModel> {
@@ -151,9 +188,9 @@ impl EventModel {
     
     // unimplemented!("Just not here yet");
     let time_reg_arr: [Regex; 3] = [
-        Regex::new(r"^\d{1,2}:\d\d [A,P]M").unwrap(),
-        Regex::new(r"^(\d{1,2}) ([A,P]M)").unwrap(),
-        Regex::new(r"^(\d{1,2})((?::\d\d)|)((?:[A,P]M|))-(\d{1,2})((?::\d\d)|) ?([A,P]M)").unwrap(),
+        Regex::new(EventModel::REG1).unwrap(),
+        Regex::new(EventModel::REG2).unwrap(),
+        Regex::new(EventModel::REG3).unwrap(),
       ];
 
     if time_reg_arr[0].is_match(timestr.as_ref()) {
