@@ -596,7 +596,7 @@ mod tests {
     }
 
     #[test]
-    fn text_from_line() {
+    fn test_from_line() {
       let line_vec = vec![
         r"- [ ] (24-25 Feb 24) () () Excision",
         r"- [ ] (15 Feb 2024) (6-10PM) (White Oak Music Hall, Houston) The Plot in You & Beartooth",
@@ -612,8 +612,13 @@ mod tests {
       for line in line_vec {
         let temp = EventModel::from_line(line.to_string());
         assert!(temp.is_ok());
-        // dbg!(temp);
+        let temp = temp.unwrap();
+        let tempjson = serde_json::to_string(&temp);
+        assert!(tempjson.is_ok());
+        println!("{}", tempjson.unwrap());
       }
     }
+
+
 
 }
