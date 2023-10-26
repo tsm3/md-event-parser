@@ -82,8 +82,8 @@ pub struct EventModel {
   #[serde(serialize_with = "my_date_ser::serialize_naive_date")]
   start_date: NaiveDate, // Make this just a datetime, mandatory
 
-  #[serde(serialize_with = "my_date_ser::serialize_naive_date_opt", skip_serializing_if = "Option::is_none")]
-  end_date: Option<NaiveDate>, // Make this just a datetime, mandatory
+  #[serde(serialize_with = "my_date_ser::serialize_naive_date")]
+  end_date: NaiveDate, // Make this just a datetime, mandatory
   
   #[serde(serialize_with = "my_date_ser::serialize_naive_time_opt", skip_serializing_if = "Option::is_none")]
   start_time: Option<NaiveTime>, // If None, all day
@@ -154,8 +154,8 @@ impl EventModel {
       return Err(EventParseError { desc: "Couldn't parse start_date, which is a necessary field".to_string() });
     }
     ret.end_date = match end_date_struct {
-      Some(end) => Some(end),
-      None => Some(start_date_struct.expect("To get here, we've already verified it's an Ok()")),
+      Some(end) => end,
+      None => start_date_struct.expect("To get here, we've already verified it's an Ok()"),
     };
 
     let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr)?;
@@ -597,9 +597,23 @@ mod tests {
 
     #[test]
     fn text_from_line() {
-      let linestr = r"- [ ] (21 Nov) (5:30PM-10PM) (713 Music Hall, Houston) Pierce the Veil & Dayseeker";
-      let res = EventModel::from_line(linestr.to_string());
-      dbg!(res);
+      let line_vec = vec![
+        r"- [ ] (24-25 Feb 24) () () Excision",
+        r"- [ ] (15 Feb 2024) (6-10PM) (White Oak Music Hall, Houston) The Plot in You & Beartooth",
+        r"- [ ] (19 Nov) (7-10PM) (Acadia Bar & Grill, Houston) Trapt",
+        r"- [ ] (21 Nov) (5:30PM-10PM) (713 Music Hall, Houston) Pierce the Veil & Dayseeker",
+        r"- [ ] (7 Nov) (6PM-10PM) (House of Blues, Houston) Of Mice & Men and Bullet for My Valentine",
+        r"- [ ] (30 Oct) (6PM-10PM) (White Oak Music Hall, Houston) Currents & Polaris",
+        r"- [ ] (21 Oct) (6PM-10PM) (The Secret Group, Houston) Iamjakehill",
+        r"- [ ] (28-29 Oct) () (Austin) Freaky Deaky '23 ",
+        r"- [ ] (20 Oct) () () Drowning Pool & Adelitas Way",
+        r"- [ ] (2 Nov) () (Houston) Polyphia"
+      ];
+      for line in line_vec {
+        let temp = EventModel::from_line(line.to_string());
+        assert!(temp.is_ok());
+        dbg!(temp);
+      }
     }
 
 }
