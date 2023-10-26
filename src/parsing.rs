@@ -5,7 +5,7 @@ use regex::Regex;
 use std::env;
 use std::io::prelude::*;
 
-pub const EVENTREGEX : &'static str = r"- \[[ ,x]\] +\((.*)\) +\((.*)\) +\((.*)\)(.*)";
+pub const EVENTREGEX : &'static str = r"- \[[ ,x]\] +\((.*)\) +\((.*)\) +\((.*)\) ?(.*)";
 
 pub fn file_is_event(filestr: &str) -> bool {
   /* Need to, later, figure out how to only check the first like, 10 lines so I don't process entire,

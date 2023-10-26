@@ -129,17 +129,18 @@ impl EventModel {
   ) -> Result<EventModel> {
 
     if !parsing::line_is_event(&linestr) {
-      return Err(EventParseError { desc: "This line is not an event: {linestr}".to_owned() })
+      return Err(EventParseError { desc: format!("This line is not an event: {linestr}").to_owned() })
     }
 
-    let ret = EventModel::default();
+    let something = EventModel::extract_from_line(&linestr);
+    let mut ret = EventModel::default();
 
     
 
     Ok(EventModel::default())
   }
 
-  pub fn extract_from_line(haystack: &str) -> Result<(String, String, String, String)> {
+  pub fn extract_from_line<'a>(haystack: &'a str) -> Result<(&'a str, &'a str, &'a str, &'a str)> {
 
     // // Remove checklist prefix
     // let trim_line = linestr
@@ -150,9 +151,13 @@ impl EventModel {
     let reg = Regex::new(parsing::EVENTREGEX).unwrap();
 
     let temp = reg.captures(haystack).ok_or(EventParseError{desc: "Line regex didn't match".to_owned()})?;
-    
 
-    return Ok(("".to_owned(), "".to_owned(), "".to_owned(), "".to_owned()));
+    let datestr: &'a str = temp.extract::<4>().1.get(0).unwrap();
+    let timestr: &'a str = temp.extract::<4>().1.get(1).unwrap();
+    let placestr: &'a str = temp.extract::<4>().1.get(2).unwrap();
+    let titlestr: &'a str = temp.extract::<4>().1.get(3).unwrap();
+
+    return Ok((datestr, timestr, placestr, titlestr));
   }
 
   pub fn with_date(date_str: String) -> Result<EventModel> {
@@ -433,5 +438,38 @@ mod tests {
 
     }
 
+    #[test]
+    fn test_extract_line() {
+      let linestr = r"- [ ] (21 Nov) (5:30PM-10PM) (713 Music Hall, Houston) Pierce the Veil & Dayseeker";
+      let expect_datestr = "21 Nov";
+      let expect_timestr = "5:30PM-10PM";
+      let expect_placestr = "713 Music Hall, Houston";
+      let expect_titlestr = "Pierce the Veil & Dayseeker";
+
+      let tup = EventModel::extract_from_line(linestr);
+      assert!(tup.is_ok());
+      let tup = tup.unwrap();
+      // dbg!(tup.0);
+      assert!(tup.0 == expect_datestr);
+      // dbg!(tup.1);
+      assert!(tup.1 == expect_timestr);
+      // dbg!(tup.2);
+      assert!(tup.2 == expect_placestr);
+      // dbg!(tup.3);
+      assert!(tup.3 == expect_titlestr);
+
+      // if let Ok((datestr, timestr, placestr, titlestr)) = EventModel::extract_from_line(linestr){
+      //   dbg!(datestr);
+      //   assert!(datestr == expect_datestr);
+      //   dbg!(timestr);
+      //   assert!(timestr == expect_timestr);
+      //   dbg!(placestr);
+      //   assert!(placestr == expect_placestr);
+      //   dbg!(titlestr);
+      //   assert!(titlestr == expect_titlestr);
+      // } else {
+      //   assert!(false);
+      // }
+    }
 
 }
