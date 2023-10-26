@@ -75,7 +75,6 @@ where
   serializer.serialize_str(&s)
 }
 
-
 }
 
 #[derive(Default, Debug, Serialize)]
@@ -101,9 +100,16 @@ impl EventModel {
   const TIMEFMT: &'static str = "%I:%M %P";
   const TIMEFMT2: &'static str = "%I%M %P";
 
-  const REG1: &'static str = r"^\d{1,2}:\d\d [A,P]M";
-  const REG2: &'static str = r"^(\d{1,2}) ([A,P]M)";
-  const REG3: &'static str = r"^(\d{1,2})((?::\d\d)|)((?:[A,P]M|))-(\d{1,2})((?::\d\d)|) ?([A,P]M)";
+  const TIMEREG1: &'static str = r"^\d{1,2}:\d\d [A,P]M$";
+  const TIMEREG2: &'static str = r"^(\d{1,2}) ([A,P]M)$";
+  const TIMEREG3: &'static str = r"^(\d{1,2})((?::\d\d)|)((?:[A,P]M|))-(\d{1,2})((?::\d\d)|) ?([A,P]M)$";
+
+  // 3 cap groups, ex 1 Feb or 20 Feb or 13Feb: Matches any date of form `%d %b` or `%d%b`, accepts year as empty string
+  const DATEREG1: &'static str = r"^(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
+  // 4 cap groups, ex 01-4Feb,: Matches any date of form `%d-%d %b` or `%d-%d%b`, accepts year as empty string
+  const DATEREG2: &'static str = r"^(\d{1,2})-(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
+  // 5 cap groups, ex 28 Feb - 2 April: Matches any date of form `%d%b - %d %b`, accepts year as empty string
+  const DATEREG3: &'static str = r"^(\d{1,2}) ?([a-zA-Z]{3,9}) ?- ?(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
 
   pub fn new(
     start_date: String,
@@ -188,24 +194,21 @@ impl EventModel {
   }
 
   fn parse_time_tup(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveTime>, Option<NaiveTime>)> {
-    /* Need to localize the complicated way I'm going to parse time */
     /** List of ways I might write time?
      * form a) 6 PM
      * 6:00 PM
      * 6-7 PM
      * 6:30-7PM
-     * I'm going to have to figure out how to extract both start and end time from this?
      */
     
-    // Forgot that I could just not have times rip
     if timestr == "".to_string() {
       return Ok((None, None));
     }
 
     let time_reg_arr: [Regex; 3] = [
-        Regex::new(EventModel::REG1).unwrap(),
-        Regex::new(EventModel::REG2).unwrap(),
-        Regex::new(EventModel::REG3).unwrap(),
+        Regex::new(EventModel::TIMEREG1).unwrap(),
+        Regex::new(EventModel::TIMEREG2).unwrap(),
+        Regex::new(EventModel::TIMEREG3).unwrap(),
       ];
 
     if time_reg_arr[0].is_match(timestr.as_ref()) {
@@ -298,6 +301,17 @@ impl EventModel {
     
   }
 
+  fn parse_date_tup() -> Result<(Option<NaiveDate>, Option<NaiveDate>)> {
+
+    // Must have a start date, end date is optional (== start date if none)
+    /** List of ways I might write date:
+     * 12 Feb
+     * 12-14 Feb
+     * 27 Feb - 3 April
+     */
+
+    Err(EventParseError { desc: "Bruh".to_owned() })
+  }
 }
 
 
