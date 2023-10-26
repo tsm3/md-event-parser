@@ -229,13 +229,13 @@ impl EventModel {
       ];
 
     if time_reg_arr[0].is_match(timestr.as_ref()) {
-      println!("String {timestr} matches regex {:?}", time_reg_arr[0]);
+      // println!("String {timestr} matches regex {:?}", time_reg_arr[0]);
       // Simple/well-formed case
       let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()})?;
       return Ok((Some(start_time_struct), None));
 
     } else if let Some(mat) = time_reg_arr[1].captures(timestr.as_ref()) {
-      println!("String {timestr} matches regex {:?}", time_reg_arr[1]);
+      // println!("String {timestr} matches regex {:?}", time_reg_arr[1]);
       // This is single time with no `:\d\d`
       let mut modstr: String = String::new();
       // Pushes the number we matched on to the str
@@ -247,7 +247,7 @@ impl EventModel {
       return Ok((Some(start_time_struct), None));
 
     } else if let Some(mat) = time_reg_arr[2].captures(timestr.as_ref()) {
-      println!("String {timestr} matches regex {:?}", time_reg_arr[2]);
+      // println!("String {timestr} matches regex {:?}", time_reg_arr[2]);
       /**
        * This is the most complicated case, we have up to 5 capture groups.
        * I'm considering breaking this into two different cases like
@@ -336,7 +336,7 @@ impl EventModel {
     let current_year = Utc::now().year();
     
     if let Some(mat) = date_reg_arr[0].captures(datestr.as_ref()) {
-      println!("String {datestr} matches regex {:?}", date_reg_arr[0]);
+      // println!("String {datestr} matches regex {:?}", date_reg_arr[0]);
       // Simple/well-formed case, just need to check for year
       if !mat.extract::<3>().1[2].is_empty() { // Year not blank
         let start_date_struct = Self::base_parse_date(datestr).map_err(|e| EventParseError{desc: e.to_string()})?;
@@ -347,7 +347,7 @@ impl EventModel {
       }
 
     } else if let Some(mat) = date_reg_arr[1].captures(datestr.as_ref()) {
-      println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
+      // println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
       // This is a date range of form (\d\d) ?- ?(\d\d) ?(MONTH) ?(YEAR)
       // Where year can be empty (put current year in this case)
       let start_day_str = mat.extract::<4>().1[0];
@@ -366,7 +366,7 @@ impl EventModel {
       return Ok((Some(start_date_struct), Some(end_date_struct)));
 
     } else if let Some(mat) = date_reg_arr[2].captures(datestr.as_ref()) {
-      println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
+      // println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
       // 5 cap groups, ex 28 Feb - 2 April: Matches any date of form `%d%b - %d %b`, accepts year as empty string
       let start_day_str = mat.extract::<5>().1[0];
       let start_month_str = mat.extract::<5>().1[1];
@@ -401,7 +401,7 @@ mod tests {
       // date: Some("Hi".to_string()),
       ..Default::default()
     };
-    dbg!(em);
+    // dbg!(em);
   }
 
     #[test]
@@ -413,7 +413,7 @@ mod tests {
         None, 
         None,
         "Test Title".to_string());
-      dbg!(em);
+      // dbg!(em);
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod tests {
     #[test]
     fn test_parse_time() {
       let bruh = EventModel::base_parse_time("6:00 PM");
-      dbg!(bruh);
+      // dbg!(bruh);
     }
 
     #[test]
@@ -456,7 +456,7 @@ mod tests {
     };
 
       let json = serde_json::to_string_pretty(&em).unwrap();
-      println!("{}", json);
+      // println!("{}", json);
     }
 
     #[test]
@@ -465,7 +465,7 @@ mod tests {
       // let timestr: &'static str = "600 PM"; // This doesn't work
       let date = NaiveTime::parse_from_str(timestr, EventModel::TIMEFMT2);
       assert!(date.is_ok());
-      dbg!(date);
+      // dbg!(date);
     }
 
     #[test]
@@ -485,7 +485,7 @@ mod tests {
       let mut time_struct_vec = vec![];
       for time_str in time_str_vec {
         let temp = EventModel::parse_time_tup(time_str);
-        dbg!(&temp);
+        // dbg!(&temp);
         assert!(temp.is_ok());
         time_struct_vec.push(temp);
       }
@@ -512,7 +512,7 @@ mod tests {
       let mut date_struct_vec = vec![];
       for date_str in date_str_vec {
         let temp = EventModel::parse_date_tup(date_str);
-        dbg!(&temp);
+        // dbg!(&temp);
         assert!(temp.is_ok());
         date_struct_vec.push(temp);
       }
@@ -582,13 +582,13 @@ mod tests {
       assert!(tup.3 == expect_titlestr);
 
       // if let Ok((datestr, timestr, placestr, titlestr)) = EventModel::extract_from_line(linestr){
-      //   dbg!(datestr);
+        // dbg!(datestr);
       //   assert!(datestr == expect_datestr);
-      //   dbg!(timestr);
+        // dbg!(timestr);
       //   assert!(timestr == expect_timestr);
-      //   dbg!(placestr);
+        // dbg!(placestr);
       //   assert!(placestr == expect_placestr);
-      //   dbg!(titlestr);
+        // dbg!(titlestr);
       //   assert!(titlestr == expect_titlestr);
       // } else {
       //   assert!(false);
@@ -612,7 +612,7 @@ mod tests {
       for line in line_vec {
         let temp = EventModel::from_line(line.to_string());
         assert!(temp.is_ok());
-        dbg!(temp);
+        // dbg!(temp);
       }
     }
 
