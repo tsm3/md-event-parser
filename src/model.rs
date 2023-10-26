@@ -82,12 +82,16 @@ where
 pub struct EventModel {
   #[serde(serialize_with = "my_date_ser::serialize_naive_date")]
   start_date: NaiveDate, // Make this just a datetime, mandatory
+
   #[serde(serialize_with = "my_date_ser::serialize_naive_date_opt", skip_serializing_if = "Option::is_none")]
   end_date: Option<NaiveDate>, // Make this just a datetime, mandatory
+  
   #[serde(serialize_with = "my_date_ser::serialize_naive_time_opt", skip_serializing_if = "Option::is_none")]
   start_time: Option<NaiveTime>, // If None, all day
+  
   #[serde(serialize_with = "my_date_ser::serialize_naive_time_opt", skip_serializing_if = "Option::is_none")]
   end_time: Option<NaiveTime>, // If None, all day
+  
   place: String, // Should this be mandatory? yuh just empty string if None
   title: String, // This is mandatory, but just a String
 }
@@ -132,7 +136,11 @@ impl EventModel {
       return Err(EventParseError { desc: format!("This line is not an event: {linestr}").to_owned() })
     }
 
-    let something = EventModel::extract_from_line(&linestr);
+    let (datestr, timestr, placestr, titlestr) = EventModel::extract_from_line(&linestr)?;
+
+    let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr);
+    let start_time_struct = start_time_struct?;
+
     let mut ret = EventModel::default();
 
     
@@ -142,11 +150,8 @@ impl EventModel {
 
   pub fn extract_from_line<'a>(haystack: &'a str) -> Result<(&'a str, &'a str, &'a str, &'a str)> {
 
-    // // Remove checklist prefix
-    // let trim_line = linestr
-    //   .trim_start()
-    //   .trim_start_matches("- [ ] ")
-    //   .trim_start_matches("- [x] ");
+    // A lot of the string processing is instead done by only capturing the regex we want, 
+    // e.g. we don't have to trim the - [ ] prefix
 
     let reg = Regex::new(parsing::EVENTREGEX).unwrap();
 
