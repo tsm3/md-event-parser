@@ -50,16 +50,16 @@ use super::EventModel;
   pub fn serialize_naive_date_opt<S>(
     date: &Option<NaiveDate>,
     serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
+  ) -> Result<S::Ok, S::Error>
+  where
+      S: Serializer,
+  {
     let s = match date {
       Some(date) => format!("{}", date.format(DATEFORMAT)),
       _ => unreachable!(),
     };
     serializer.serialize_str(&s)
-}
+  }
 
 pub fn serialize_naive_time_opt<S>(
   time: &Option<NaiveTime>,
@@ -301,7 +301,7 @@ impl EventModel {
     
   }
 
-  fn parse_date_tup() -> Result<(Option<NaiveDate>, Option<NaiveDate>)> {
+  fn parse_date_tup(datestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveDate>, Option<NaiveDate>)> {
 
     // Must have a start date, end date is optional (== start date if none)
     /** List of ways I might write date:
@@ -309,6 +309,29 @@ impl EventModel {
      * 12-14 Feb
      * 27 Feb - 3 April
      */
+
+    let date_reg_arr: [Regex; 3] = [
+        Regex::new(EventModel::DATEREG1).unwrap(),
+        Regex::new(EventModel::DATEREG2).unwrap(),
+        Regex::new(EventModel::DATEREG3).unwrap(),
+      ];
+
+      if date_reg_arr[0].is_match(datestr.as_ref()) {
+        println!("String {datestr} matches regex {:?}", date_reg_arr[0]);
+        // Simple/well-formed case
+        let start_date_struct = Self::base_parse_date(datestr).map_err(|e| EventParseError{desc: e.to_string()})?;
+        return Ok((Some(start_date_struct), None));
+
+      } else if let Some(mat) = date_reg_arr[1].captures(datestr.as_ref()) {
+        println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
+        // This is a date range of form (\d\d) ?- ?(\d\d) ?(MONTH) ?(YEAR)
+        // Where year can be empty (put current year in this case)
+        let start_date_str = mat.extract::<4>().1[0];
+        let end_date_str = mat.extract::<4>().1[1];
+        let month_str = mat.extract::<4>().1[2];
+        let year_str = mat.extract::<4>().1[3];
+  
+      }
 
     Err(EventParseError { desc: "Bruh".to_owned() })
   }
