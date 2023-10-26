@@ -107,7 +107,7 @@ impl EventModel {
   // 3 cap groups, ex 1 Feb or 20 Feb or 13Feb: Matches any date of form `%d %b` or `%d%b`, accepts year as empty string
   const DATEREG1: &'static str = r"^(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
   // 4 cap groups, ex 01-4Feb,: Matches any date of form `%d-%d %b` or `%d-%d%b`, accepts year as empty string
-  const DATEREG2: &'static str = r"^(\d{1,2})-(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
+  const DATEREG2: &'static str = r"^(\d{1,2}) ?- ?(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
   // 5 cap groups, ex 28 Feb - 2 April: Matches any date of form `%d%b - %d %b`, accepts year as empty string
   const DATEREG3: &'static str = r"^(\d{1,2}) ?([a-zA-Z]{3,9}) ?- ?(\d{1,2}) ?([a-zA-Z]{3,9}) ?(\d\d\d\d|\d\d|)$";
 
@@ -336,18 +336,41 @@ impl EventModel {
       let start_day_str = mat.extract::<4>().1[0];
       let end_day_str = mat.extract::<4>().1[1];
       let month_str = mat.extract::<4>().1[2];
-      let year_str = mat.extract::<4>().1[3];
+      let year_str = match mat.extract::<4>().1[3] {
+        "" => Utc::now().year().to_string(),
+        x => x.to_string(),
+      };
 
-      let start_date_str = format!("{start_day_str} ");
-    
+      let start_date_str = format!("{start_day_str} {month_str} {year_str}");
+      let end_date_str = format!("{end_day_str} {month_str} {year_str}");
+
+      let start_date_struct = Self::base_parse_date(start_date_str).map_err(|e| EventParseError{desc: e.to_string()})?;
+      let end_date_struct = Self::base_parse_date(end_date_str).map_err(|e| EventParseError{desc: e.to_string()})?;
+      return Ok((Some(start_date_struct), Some(end_date_struct)));
+
+    } else if let Some(mat) = date_reg_arr[2].captures(datestr.as_ref()) {
+      println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
+      // 5 cap groups, ex 28 Feb - 2 April: Matches any date of form `%d%b - %d %b`, accepts year as empty string
+      let start_day_str = mat.extract::<5>().1[0];
+      let start_month_str = mat.extract::<5>().1[1];
+      let end_day_str = mat.extract::<5>().1[2];
+      let end_month_str = mat.extract::<5>().1[3];
+      let year_str = match mat.extract::<5>().1[4] {
+        "" => Utc::now().year().to_string(),
+        x => x.to_string(),
+      };
+
+      let start_date_str = format!("{start_day_str} {start_month_str} {year_str}");
+      let end_date_str = format!("{end_day_str} {end_month_str} {year_str}");
+
+      let start_date_struct = Self::base_parse_date(start_date_str).map_err(|e| EventParseError{desc: e.to_string()})?;
+      let end_date_struct = Self::base_parse_date(end_date_str).map_err(|e| EventParseError{desc: e.to_string()})?;
+      return Ok((Some(start_date_struct), Some(end_date_struct)));
+    } else {
+      Err(EventParseError { desc: "Bruh".to_owned() })
     }
-
-  Err(EventParseError { desc: "Bruh".to_owned() })
   }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -448,6 +471,33 @@ mod tests {
         dbg!(&temp);
         assert!(temp.is_ok());
         time_struct_vec.push(temp);
+      }
+    }
+
+    #[test]
+    fn test_parse_date_tup() {
+      let date_str_vec = vec![
+        "24-25 Feb",
+        "24-25 Feb 23",
+        "24-25 Feb 2023",
+        "24-25 Feb2023",
+        "24-25Feb2023",
+        "24Jan-25Feb2023",
+        "24Jan - 25Feb2023",
+        "24 Jan - 25 Feb 2023",
+        "25 Feb 2023",
+        "25Feb2023",
+        "25Feb",
+        "25Feb23",
+        "25Feb 23",
+      ];
+      
+      let mut date_struct_vec = vec![];
+      for date_str in date_str_vec {
+        let temp = EventModel::parse_date_tup(date_str);
+        dbg!(&temp);
+        assert!(temp.is_ok());
+        date_struct_vec.push(temp);
       }
     }
 
