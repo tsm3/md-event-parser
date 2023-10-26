@@ -143,9 +143,10 @@ impl EventModel {
 
     let mut ret = EventModel::default();
 
-    
+    ret.start_time = start_time_struct;
+    ret.end_time   = end_time_struct;
 
-    Ok(EventModel::default())
+    Ok(ret)
   }
 
   pub fn extract_from_line<'a>(haystack: &'a str) -> Result<(&'a str, &'a str, &'a str, &'a str)> {
@@ -479,6 +480,13 @@ mod tests {
       // } else {
       //   assert!(false);
       // }
+    }
+
+    #[test]
+    fn text_from_line() {
+      let linestr = r"- [ ] (21 Nov) (5:30PM-10PM) (713 Music Hall, Houston) Pierce the Veil & Dayseeker";
+      let res = EventModel::from_line(linestr.to_string());
+      dbg!(res);
     }
 
 }
