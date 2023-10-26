@@ -138,8 +138,8 @@ impl EventModel {
 
     let (datestr, timestr, placestr, titlestr) = EventModel::extract_from_line(&linestr)?;
 
-    let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr);
-    let start_time_struct = start_time_struct?;
+    let (start_time_struct, end_time_struct) = EventModel::parse_time_tup(timestr)?;
+    // let start_time_struct = start_time_struct;
 
     let mut ret = EventModel::default();
 
@@ -186,7 +186,7 @@ impl EventModel {
     NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
   }
 
-  fn parse_time_tup(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> (Result<NaiveTime>, Option<NaiveTime>) {
+  fn parse_time_tup(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveTime>, Option<NaiveTime>)> {
     /* Need to localize the complicated way I'm going to parse time */
     /** List of ways I might write time?
      * form a) 6 PM
@@ -196,7 +196,11 @@ impl EventModel {
      * I'm going to have to figure out how to extract both start and end time from this?
      */
     
-    // unimplemented!("Just not here yet");
+    // Forgot that I could just not have times rip
+    if timestr == "".to_string() {
+      return Ok((None, None));
+    }
+
     let time_reg_arr: [Regex; 3] = [
         Regex::new(EventModel::REG1).unwrap(),
         Regex::new(EventModel::REG2).unwrap(),
@@ -206,8 +210,8 @@ impl EventModel {
     if time_reg_arr[0].is_match(timestr.as_ref()) {
       println!("String {timestr} matches regex {:?}", time_reg_arr[0]);
       // Simple/well-formed case
-      let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()});
-      return (start_time_struct, None);
+      let start_time_struct = Self::base_parse_time(timestr).map_err(|e| EventParseError{desc: e.to_string()})?;
+      return Ok((Some(start_time_struct), None));
 
     } else if let Some(mat) = time_reg_arr[1].captures(timestr.as_ref()) {
       println!("String {timestr} matches regex {:?}", time_reg_arr[1]);
@@ -218,8 +222,8 @@ impl EventModel {
       modstr.push_str(":00 ");
       // Pushes the AM or PM
       modstr.push_str(mat.extract::<2>().1[1]);
-      let start_time_struct = Self::base_parse_time(&modstr).map_err(|e| EventParseError{desc:e.to_string()});
-      return (start_time_struct, None);
+      let start_time_struct = Self::base_parse_time(&modstr).map_err(|e| EventParseError{desc:e.to_string()})?;
+      return Ok((Some(start_time_struct), None));
 
     } else if let Some(mat) = time_reg_arr[2].captures(timestr.as_ref()) {
       println!("String {timestr} matches regex {:?}", time_reg_arr[2]);
@@ -270,13 +274,13 @@ impl EventModel {
       }
       endstr.push_str(cap6);
       
-      let start_time_struct = Self::base_parse_time(&startstr).map_err(|e| EventParseError{desc:e.to_string()});
+      let start_time_struct = Self::base_parse_time(&startstr).map_err(|e| EventParseError{desc:e.to_string()}).ok();
       let end_time_struct = Self::base_parse_time(&endstr).ok();
 
-      return (start_time_struct, end_time_struct);
+      return Ok((start_time_struct, end_time_struct));
 
     } else {
-      return (Err(EventParseError { desc: "".to_owned() }), None);
+      return Err(EventParseError { desc: "Something fialed in parse_time_tup".to_owned() });
     }
 
     unreachable!();
@@ -395,7 +399,7 @@ mod tests {
       for time_str in time_str_vec {
         let temp = EventModel::parse_time_tup(time_str);
         dbg!(&temp);
-        assert!(temp.0.is_ok());
+        assert!(temp.is_ok());
         time_struct_vec.push(temp);
       }
     }
