@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use chrono::{Datelike, NaiveDate, NaiveTime, ParseResult};
+use chrono::{Datelike, NaiveDate, NaiveTime, ParseResult, Utc};
 use std::{error::Error, fmt, io::BufRead};
 use serde::{Serialize, Deserialize};
 use regex::Regex;
@@ -183,17 +183,17 @@ impl EventModel {
     })
   }
 
-  fn base_parse_time(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveTime> {
+  fn base_parse_time(timestr: impl Into<String> + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveTime> {
     /* Put in one place for ease of iteration */
     NaiveTime::parse_from_str(&timestr.into(), EventModel::TIMEFMT)
   }
 
-  fn base_parse_date(datestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveDate> {
+  fn base_parse_date(datestr: impl Into<String> + AsRef<str> + std::fmt::Display) -> ParseResult<NaiveDate> {
     /* Put in one place for ease of iteration */
     NaiveDate::parse_from_str(&datestr.into(), EventModel::DATEFMT)
   }
 
-  fn parse_time_tup(timestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveTime>, Option<NaiveTime>)> {
+  fn parse_time_tup(timestr: impl Into<String> + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveTime>, Option<NaiveTime>)> {
     /** List of ways I might write time?
      * form a) 6 PM
      * 6:00 PM
@@ -301,7 +301,7 @@ impl EventModel {
     
   }
 
-  fn parse_date_tup(datestr: impl Into<String> + Copy + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveDate>, Option<NaiveDate>)> {
+  fn parse_date_tup(datestr: impl Into<String> + AsRef<str> + std::fmt::Display + PartialEq<String>) -> Result<(Option<NaiveDate>, Option<NaiveDate>)> {
 
     // Must have a start date, end date is optional (== start date if none)
     /** List of ways I might write date:
@@ -316,24 +316,33 @@ impl EventModel {
         Regex::new(EventModel::DATEREG3).unwrap(),
       ];
 
-      if date_reg_arr[0].is_match(datestr.as_ref()) {
-        println!("String {datestr} matches regex {:?}", date_reg_arr[0]);
-        // Simple/well-formed case
+    let current_year = Utc::now().year();
+    
+    if let Some(mat) = date_reg_arr[0].captures(datestr.as_ref()) {
+      println!("String {datestr} matches regex {:?}", date_reg_arr[0]);
+      // Simple/well-formed case, just need to check for year
+      if !mat.extract::<3>().1[2].is_empty() { // Year not blank
         let start_date_struct = Self::base_parse_date(datestr).map_err(|e| EventParseError{desc: e.to_string()})?;
+        return Ok((Some(start_date_struct), None));  
+      } else { // Year is blank
+        let start_date_struct = Self::base_parse_date(format!("{datestr} {current_year}")).map_err(|e| EventParseError{desc: e.to_string()})?;
         return Ok((Some(start_date_struct), None));
-
-      } else if let Some(mat) = date_reg_arr[1].captures(datestr.as_ref()) {
-        println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
-        // This is a date range of form (\d\d) ?- ?(\d\d) ?(MONTH) ?(YEAR)
-        // Where year can be empty (put current year in this case)
-        let start_date_str = mat.extract::<4>().1[0];
-        let end_date_str = mat.extract::<4>().1[1];
-        let month_str = mat.extract::<4>().1[2];
-        let year_str = mat.extract::<4>().1[3];
-  
       }
 
-    Err(EventParseError { desc: "Bruh".to_owned() })
+    } else if let Some(mat) = date_reg_arr[1].captures(datestr.as_ref()) {
+      println!("String {datestr} matches regex {:?}", date_reg_arr[1]);
+      // This is a date range of form (\d\d) ?- ?(\d\d) ?(MONTH) ?(YEAR)
+      // Where year can be empty (put current year in this case)
+      let start_day_str = mat.extract::<4>().1[0];
+      let end_day_str = mat.extract::<4>().1[1];
+      let month_str = mat.extract::<4>().1[2];
+      let year_str = mat.extract::<4>().1[3];
+
+      let start_date_str = format!("{start_day_str} ");
+    
+    }
+
+  Err(EventParseError { desc: "Bruh".to_owned() })
   }
 }
 
